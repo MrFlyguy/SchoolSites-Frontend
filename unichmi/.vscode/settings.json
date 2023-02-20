@@ -1,3 +1,10 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/linux"
+    "cmake.sourceDirectory": "${workspaceFolder}/linux",
+    "cmake.configureOnOpen": false,
+
+    "editor.codeActionsOnSave": {
+        "source.fixAll": true
+    },
+    
+    "dart.previewFlutterUiGuides": true
 }

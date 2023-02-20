@@ -1,18 +1,13 @@
 import 'package:flutter/material.dart';
 
 class FilledBlueButton extends StatefulWidget {
-  final String type;
-  final String? name;
-  final String mail;
-  final String password;
+  final String? type;
   final void Function() onPress;
-  const FilledBlueButton(
-      {super.key,
-      required this.onPress,
-      required this.type,
-      this.name,
-      required this.mail,
-      required this.password});
+  const FilledBlueButton({
+    super.key,
+    required this.onPress,
+    required this.type,
+  });
 
   @override
   State<FilledBlueButton> createState() => _FilledBlueButtonState();
@@ -34,7 +29,7 @@ class _FilledBlueButtonState extends State<FilledBlueButton> {
                   borderRadius: BorderRadius.circular(16)),
               padding: const EdgeInsets.symmetric(vertical: 15),
               child: Text(
-                widget.type == 'logIn' ? 'Войти' : 'Зарегистрироваться',
+                widget.type == 'logIn' ? 'Войти' : widget.type == 'request' ? 'Отправить' : 'Зарегистрироваться',
                 style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
