@@ -172,7 +172,7 @@ class _AppState extends State<App> {
     }
   }
 
-  void checkRequest() async {
+  Future<void> checkRequest() async {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/application/distribute');
     try {
@@ -268,7 +268,7 @@ class _AppState extends State<App> {
     showComments();
   }
 
-  void waitForRequests() async {
+  Future<void> waitForRequests() async {
     await getRequests();
     isRequestsLoading = false;
     setState(() {});
@@ -380,12 +380,13 @@ class _AppState extends State<App> {
                                           Row(
                                             children: [
                                               IconButton(
-                                                  onPressed: () {
+                                                  onPressed: () async {
                                                     isAccepted = true;
-                                                    requests[index]['_id'];
-                                                    checkRequest();
+                                                    requestID =
+                                                        requests[index]['_id'];
+                                                    await checkRequest();
                                                     Navigator.pop(_);
-                                                    waitForRequests();
+                                                    await waitForRequests();
                                                   },
                                                   icon: const Icon(
                                                     Icons.check,
