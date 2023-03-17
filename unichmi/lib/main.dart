@@ -3,6 +3,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
+import 'package:quickalert/models/quickalert_type.dart';
+import 'package:quickalert/widgets/quickalert_dialog.dart';
 import 'package:unichmi/input.dart';
 import 'package:unichmi/passInput.dart';
 import 'package:unichmi/unfilledButton.dart';
@@ -25,6 +27,26 @@ class App extends StatefulWidget {
 late String accessToken;
 
 class _AppState extends State<App> {
+  Future<void> checkCommRequest() async {
+    final url = Uri.parse(
+        'https://universities-control-system.onrender.com/api/auth/checkComment');
+    try {
+      final response = await http.post(url,
+          headers: {
+            'Content-Type': 'application/json',
+            'token': accessToken,
+          },
+          body: jsonEncode({
+            "commentId": commRequestID,
+            "set": isCommReqAccepted,
+          }));
+      log(response.body);
+      setState(() {});
+    } catch (e) {
+      log(e.toString());
+    }
+  }
+
   void doRating() async {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/auth/rating');
@@ -57,6 +79,7 @@ class _AppState extends State<App> {
             "universityId": uniId,
             "text": commentText,
           }));
+      response.statusCode == 200 ? showSuccess() : showError();
       log(response.body);
     } catch (e) {
       log(e.toString());
@@ -76,12 +99,13 @@ class _AppState extends State<App> {
             "universityId": uniId,
           }));
       log(response.body);
+      response.statusCode == 200 ? showSuccess() : showError();
     } catch (e) {
       log(e.toString());
     }
   }
 
-  void doUnsubscrive() async {
+  void doUnsubscribe() async {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/auth/subscribe');
     try {
@@ -94,6 +118,7 @@ class _AppState extends State<App> {
             "universityId": uniId,
           }));
       log(response.body);
+      response.statusCode == 200 ? showSuccess() : showError();
     } catch (e) {
       log(e.toString());
     }
@@ -112,6 +137,7 @@ class _AppState extends State<App> {
             'title': uniName,
             'url': uniUrl,
           }));
+      response.statusCode == 200 ? showSuccess() : showError();
       log(response.body);
     } catch (e) {
       log(e.toString());
@@ -137,6 +163,8 @@ class _AppState extends State<App> {
         isSigned = true;
         setState(() {});
         log(accessToken);
+      } else {
+        showError();
       }
     } catch (e) {
       log(e.toString());
@@ -166,6 +194,8 @@ class _AppState extends State<App> {
         setState(() {});
         log(accessToken);
         log(isAdmin.toString());
+      } else {
+        showError();
       }
     } catch (e) {
       log(e.toString());
@@ -181,7 +211,10 @@ class _AppState extends State<App> {
             'Content-Type': 'application/json',
             'token': accessToken,
           },
-          body: jsonEncode({"applicationId": requestID, "add": isAccepted}));
+          body: jsonEncode({
+            "applicationId": requestID,
+            "add": isAccepted,
+          }));
       log(response.body);
       setState(() {});
     } catch (e) {
@@ -197,6 +230,23 @@ class _AppState extends State<App> {
         'token': accessToken,
       });
       requests = jsonDecode(response.body)['applications'];
+    } catch (e) {
+      log(e.toString());
+    }
+  }
+
+  Future<void> getCommRequests() async {
+    final url = Uri.parse(
+        'https://universities-control-system.onrender.com/api/auth/getAllComments');
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'token': accessToken,
+        },
+      );
+      commRequests = jsonDecode(response.body)['comments'];
+      log(response.body);
     } catch (e) {
       log(e.toString());
     }
@@ -239,6 +289,20 @@ class _AppState extends State<App> {
     }
   }
 
+  Future<void> getLogs() async {
+    final url =
+        Uri.parse('https://universities-control-system.onrender.com/logs/get');
+    try {
+      final response = await http.get(url, headers: {
+        'token': accessToken,
+      });
+      logs = jsonDecode(response.body)["logs"];
+      log(logs.toString());
+    } catch (e) {
+      log(e.toString());
+    }
+  }
+
   Future<List<University>> getData() async {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/university/get');
@@ -270,9 +334,20 @@ class _AppState extends State<App> {
 
   Future<void> waitForRequests() async {
     await getRequests();
-    isRequestsLoading = false;
     setState(() {});
     showRequests();
+  }
+
+  Future<void> waitForLogs() async {
+    await getLogs();
+    setState(() {});
+    showLogs();
+  }
+
+  Future<void> waitForCommRequests() async {
+    await getCommRequests();
+    setState(() {});
+    showCommRequests();
   }
 
   void waitForUnis() async {
@@ -284,7 +359,7 @@ class _AppState extends State<App> {
   List<University> universityList = [];
   bool isLoading = true;
   bool isCommsLoading = false;
-  bool isRequestsLoading = true;
+
   final tgUrl =
       Uri.parse('https://web.telegram.org/k/#@UniversityControlSystemBot');
   @override
@@ -303,8 +378,12 @@ class _AppState extends State<App> {
   double uniRating = 0;
   List comments = [];
   List requests = [];
+  List commRequests = [];
+  List logs = [];
   String requestID = '';
+  String commRequestID = '';
   bool isAccepted = false;
+  bool isCommReqAccepted = false;
 
   void logOut() {
     isAdmin = false;
@@ -323,22 +402,20 @@ class _AppState extends State<App> {
               height: 500,
               padding: const EdgeInsets.all(15),
               child: Center(
-                  child: ListView(
-                children: [
-                  const Text(
-                    'Заявки на модерацию',
-                    style: TextStyle(fontSize: 30),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(
-                    height: 15,
-                  ),
-                  SizedBox(
-                    height: 400,
-                    child: ListView.builder(
-                        itemCount: requests.length,
-                        itemBuilder: (context, index) {
-                          return Column(
+                child: ListView(
+                  children: [
+                    const Text(
+                      'Заявки на модерацию',
+                      style: TextStyle(fontSize: 30),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    Column(
+                      children: [
+                        for (dynamic item in requests)
+                          Column(
                             children: [
                               Row(
                                 children: [
@@ -354,36 +431,31 @@ class _AppState extends State<App> {
                                         mainAxisAlignment:
                                             MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                requests[index]['title']
-                                                            .length <=
-                                                        15
-                                                    ? requests[index]['title']
-                                                    : '${requests[index]['title'].substring(0, 15)}...',
-                                                style: const TextStyle(
-                                                    fontSize: 20),
-                                              ),
-                                              Text(
-                                                requests[index]['url'].length <=
-                                                        15
-                                                    ? requests[index]['url']
-                                                    : '${requests[index]['url'].substring(0, 15)}...',
-                                                style: const TextStyle(
-                                                    fontSize: 20),
-                                              ),
-                                            ],
+                                          SizedBox(
+                                            width: 200,
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  item['title'],
+                                                  style: const TextStyle(
+                                                      fontSize: 20),
+                                                ),
+                                                Text(
+                                                  item['url'],
+                                                  style: const TextStyle(
+                                                      fontSize: 20),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                           Row(
                                             children: [
                                               IconButton(
                                                   onPressed: () async {
                                                     isAccepted = true;
-                                                    requestID =
-                                                        requests[index]['_id'];
+                                                    requestID = item['_id'];
                                                     await checkRequest();
                                                     Navigator.pop(_);
                                                     await waitForRequests();
@@ -396,14 +468,12 @@ class _AppState extends State<App> {
                                                 width: 5,
                                               ),
                                               IconButton(
-                                                  onPressed: () {
+                                                  onPressed: () async {
                                                     isAccepted = false;
-                                                    requestID =
-                                                        requests[index]['_id'];
-                                                    checkRequest();
+                                                    requestID = item['_id'];
+                                                    await checkRequest();
                                                     Navigator.pop(_);
-                                                    showRequests();
-                                                    waitForRequests();
+                                                    await waitForRequests();
                                                   },
                                                   icon: const Icon(
                                                     Icons.block,
@@ -418,11 +488,199 @@ class _AppState extends State<App> {
                                 ],
                               ),
                               const SizedBox(
-                                height: 10,
+                                height: 15,
                               )
                             ],
-                          );
-                        }),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+
+  void showLogs() {
+    showDialog(
+        context: context,
+        builder: (_) {
+          return AlertDialog(
+            content: Container(
+              width: 350,
+              height: 500,
+              padding: const EdgeInsets.all(15),
+              child: Center(
+                child: ListView(
+                  children: [
+                    const Text(
+                      'Логи',
+                      style: TextStyle(fontSize: 30),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(
+                      height: 15,
+                    ),
+                    Column(
+                      children: [
+                        for (dynamic item in logs)
+                          Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                          borderRadius:
+                                              BorderRadius.circular(16),
+                                          border:
+                                              Border.all(color: Colors.black)),
+                                      padding: const EdgeInsets.all(10),
+                                      child: Column(
+                                        children: [
+                                          Text('id: ${item['_id']}'),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text('title: ${item['title']}'),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text('errno: ${item['errno']}'),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text('code: ${item['code']}'),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                          Text('date: ${item['date']}'),
+                                          const SizedBox(
+                                            height: 5,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(
+                                height: 15,
+                              )
+                            ],
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        });
+  }
+
+  void showCommRequests() {
+    showDialog(
+        context: context,
+        builder: (_) {
+          return AlertDialog(
+            content: Container(
+              width: 350,
+              height: 500,
+              padding: const EdgeInsets.all(15),
+              child: Center(
+                  child: ListView(
+                children: [
+                  const Text(
+                    'Комментарии на модерацию',
+                    style: TextStyle(fontSize: 30),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(
+                    height: 15,
+                  ),
+                  Column(
+                    children: [
+                      for (dynamic item in commRequests)
+                        Column(
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(16),
+                                        border:
+                                            Border.all(color: Colors.black)),
+                                    padding: const EdgeInsets.all(10),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        SizedBox(
+                                          width: 200,
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text('Имя: ${item['name']}'),
+                                              Text(
+                                                  'Университет: ${item['title']}'),
+                                              Text('Отзыв: ${item['text']}')
+                                            ],
+                                          ),
+                                        ),
+                                        Row(
+                                          children: [
+                                            IconButton(
+                                                onPressed: () async {
+                                                  setState(() {
+                                                    log("GOT INTO");
+                                                    isCommReqAccepted = true;
+                                                    commRequestID =
+                                                        item['university']
+                                                            ['_id'];
+                                                    log(commRequestID);
+                                                  });
+                                                  await checkCommRequest();
+                                                  Navigator.pop(_);
+                                                  await waitForCommRequests();
+                                                },
+                                                icon: const Icon(
+                                                  Icons.check,
+                                                  color: Colors.green,
+                                                )),
+                                            const SizedBox(
+                                              width: 5,
+                                            ),
+                                            IconButton(
+                                                onPressed: () async {
+                                                  isCommReqAccepted = false;
+                                                  commRequestID =
+                                                      item['university']['_id'];
+                                                  await checkCommRequest();
+                                                  Navigator.pop(_);
+                                                  await waitForCommRequests();
+                                                },
+                                                icon: const Icon(
+                                                  Icons.block,
+                                                  color: Colors.red,
+                                                ))
+                                          ],
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(
+                              height: 15,
+                            )
+                          ],
+                        ),
+                    ],
                   ),
                 ],
               )),
@@ -491,7 +749,9 @@ class _AppState extends State<App> {
                               width: 5,
                             ),
                             IconButton(
-                                onPressed: () {},
+                                onPressed: () {
+                                  doUnsubscribe();
+                                },
                                 icon: const Icon(
                                   Icons.block,
                                   color: Colors.red,
@@ -627,6 +887,7 @@ class _AppState extends State<App> {
           return AlertDialog(
             content: Container(
               height: 250,
+              width: 400,
               padding: const EdgeInsets.all(15),
               child: Center(
                 child: Column(
@@ -676,10 +937,72 @@ class _AppState extends State<App> {
         builder: (_) {
           return AlertDialog(
             content: Container(
-              height: isAdmin ? 225 : 150,
+              height: isAdmin ? 350 : 150,
               padding: const EdgeInsets.all(15),
               child: Center(
                 child: Column(children: [
+                  isAdmin
+                      ? InkWell(
+                          onTap: () {
+                            Navigator.pop(_);
+                            waitForCommRequests();
+                          },
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.red),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  padding: const EdgeInsets.all(15),
+                                  child: const Text(
+                                    'Комметарии на модерацию',
+                                    style: TextStyle(color: Colors.red),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      : Container(),
+                  isAdmin
+                      ? const SizedBox(
+                          height: 15,
+                        )
+                      : Container(),
+                  isAdmin
+                      ? InkWell(
+                          onTap: () {
+                            Navigator.pop(_);
+                            waitForLogs();
+                          },
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    border: Border.all(color: Colors.red),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  padding: const EdgeInsets.all(15),
+                                  child: const Text(
+                                    'Посмотреть логи',
+                                    style: TextStyle(color: Colors.red),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                              )
+                            ],
+                          ),
+                        )
+                      : Container(),
+                  isAdmin
+                      ? const SizedBox(
+                          height: 15,
+                        )
+                      : Container(),
                   isAdmin
                       ? InkWell(
                           onTap: () {
@@ -883,8 +1206,8 @@ class _AppState extends State<App> {
                       FilledBlueButton(
                         type: 'logIn',
                         onPress: () {
-                          logIn();
                           Navigator.pop(_);
+                          logIn();
                           setState(() {});
                         },
                       ),
@@ -895,6 +1218,7 @@ class _AppState extends State<App> {
                           onPress: () {
                             Navigator.pop(_);
                             showSignUp();
+                            setState(() {});
                           },
                           type: 'logIn')
                     ],
@@ -904,6 +1228,24 @@ class _AppState extends State<App> {
             ),
           );
         });
+  }
+
+  void showSuccess() {
+    QuickAlert.show(
+        context: context,
+        type: QuickAlertType.success,
+        title: 'Успешно',
+        text: '',
+        confirmBtnText: 'Ок');
+  }
+
+  void showError() {
+    QuickAlert.show(
+        context: context,
+        type: QuickAlertType.error,
+        title: 'Ошибка',
+        text: 'Что-то пошло не так',
+        confirmBtnText: 'Ок');
   }
 
   bool isSigned = false;
@@ -917,6 +1259,7 @@ class _AppState extends State<App> {
     return MediaQuery(
       data: const MediaQueryData(),
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: Scaffold(
           backgroundColor: Colors.white,
           body: ListView(
@@ -1064,9 +1407,10 @@ class _AppState extends State<App> {
                                           children: [
                                             Text(
                                               universityList[index]
-                                                          .name
-                                                          .length <=
-                                                      27
+                                                              .name
+                                                              .length <=
+                                                          27 ||
+                                                      isDesktop
                                                   ? universityList[index].name
                                                   : '${universityList[index].name.substring(0, 27)}...',
                                             ),
