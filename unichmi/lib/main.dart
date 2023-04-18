@@ -107,7 +107,7 @@ class _AppState extends State<App> {
 
   void doUnsubscribe() async {
     final url = Uri.parse(
-        'https://universities-control-system.onrender.com/api/auth/subscribe');
+        'https://universities-control-system.onrender.com/api/auth/unsubscribe');
     try {
       final response = await http.post(url,
           headers: {
@@ -256,13 +256,15 @@ class _AppState extends State<App> {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/auth/getRating');
     try {
-      final response = await http.post(url,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            "universityId": uniId,
-          }));
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "universityId": uniId,
+        }),
+      );
       uniRating = jsonDecode(response.body)['rating'] / 2;
       log(uniRating.toString());
     } catch (e) {
@@ -274,13 +276,15 @@ class _AppState extends State<App> {
     final url = Uri.parse(
         'https://universities-control-system.onrender.com/api/auth/getComments');
     try {
-      final response = await http.post(url,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({
-            "universityId": uniId,
-          }));
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          "universityId": uniId,
+        }),
+      );
       comments = jsonDecode(response.body)['comments'];
       setState(() {});
       log(comments.toString());
@@ -614,7 +618,7 @@ class _AppState extends State<App> {
                                         border:
                                             Border.all(color: Colors.black)),
                                     padding: const EdgeInsets.all(10),
-                                    child: Row(
+                                    child: Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
@@ -624,25 +628,22 @@ class _AppState extends State<App> {
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text('Имя: ${item['name']}'),
                                               Text(
-                                                  'Университет: ${item['title']}'),
+                                                  'Имя: ${item['from']['name']}'),
+                                              Text(
+                                                  'Университет: ${item["university"]['title']}'),
                                               Text('Отзыв: ${item['text']}')
                                             ],
                                           ),
                                         ),
                                         Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
                                           children: [
                                             IconButton(
                                                 onPressed: () async {
-                                                  setState(() {
-                                                    log("GOT INTO");
-                                                    isCommReqAccepted = true;
-                                                    commRequestID =
-                                                        item['university']
-                                                            ['_id'];
-                                                    log(commRequestID);
-                                                  });
+                                                  isCommReqAccepted = true;
+                                                  commRequestID = item["_id"];
                                                   await checkCommRequest();
                                                   Navigator.pop(_);
                                                   await waitForCommRequests();
@@ -657,8 +658,7 @@ class _AppState extends State<App> {
                                             IconButton(
                                                 onPressed: () async {
                                                   isCommReqAccepted = false;
-                                                  commRequestID =
-                                                      item['university']['_id'];
+                                                  commRequestID = item['_id'];
                                                   await checkCommRequest();
                                                   Navigator.pop(_);
                                                   await waitForCommRequests();
@@ -1261,6 +1261,7 @@ class _AppState extends State<App> {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
+          resizeToAvoidBottomInset: false,
           backgroundColor: Colors.white,
           body: ListView(
             children: [
@@ -1409,10 +1410,10 @@ class _AppState extends State<App> {
                                               universityList[index]
                                                               .name
                                                               .length <=
-                                                          27 ||
+                                                          23 ||
                                                       isDesktop
                                                   ? universityList[index].name
-                                                  : '${universityList[index].name.substring(0, 27)}...',
+                                                  : '${universityList[index].name.substring(0, 23)}...',
                                             ),
                                             Container(
                                               padding: const EdgeInsets.all(10),
