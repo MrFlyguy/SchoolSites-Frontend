@@ -365,7 +365,7 @@ class _AppState extends State<App> {
   bool isCommsLoading = false;
 
   final tgUrl =
-      Uri.parse('https://web.telegram.org/k/#@UniversityControlSystemBot');
+      Uri.parse('https://web.telegram.org/k/#@SchoolMonitoringBot');
   @override
   void initState() {
     super.initState();
@@ -893,7 +893,7 @@ class _AppState extends State<App> {
                 child: Column(
                   children: [
                     const Text(
-                      'Заявка на добавление ВУЗа',
+                      'Заявка на добавление сайта',
                       style: TextStyle(fontSize: 25),
                       textAlign: TextAlign.center,
                     ),
@@ -904,7 +904,7 @@ class _AppState extends State<App> {
                         changeData: ({required String data}) {
                           uniUrl = data;
                         },
-                        placeholder: 'Сайт ВУЗа'),
+                        placeholder: 'Сайт'),
                     const SizedBox(
                       height: 10,
                     ),
@@ -912,7 +912,7 @@ class _AppState extends State<App> {
                         changeData: ({required String data}) {
                           uniName = data;
                         },
-                        placeholder: 'Название ВУЗа'),
+                        placeholder: 'Название'),
                     const SizedBox(
                       height: 15,
                     ),
@@ -1321,7 +1321,7 @@ class _AppState extends State<App> {
                       height: isDesktop ? 75 : 50,
                     ),
                     const Text(
-                      'Мониторинг работоспособности сайтов ВУЗов в реальном времени',
+                      'Мониторинг работоспособности сайтов в реальном времени',
                       style:
                           TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
                     ),
@@ -1355,7 +1355,7 @@ class _AppState extends State<App> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
                           Text(
-                            'ВУЗ',
+                            'Сайт',
                             style: TextStyle(
                               color: Color(0xFF525252),
                             ),
@@ -1472,8 +1472,8 @@ class _AppState extends State<App> {
                         ),
                         child: Center(
                           child: Text(isSigned
-                              ? 'Оставить заявку на добавление ВУЗа'
-                              : 'Войти, чтобы оставить заявку на добавление ВУЗа'),
+                              ? 'Оставить заявку на добавление сайта'
+                              : 'Войти, чтобы оставить заявку на добавление сайта'),
                         ),
                       ),
                     ),
